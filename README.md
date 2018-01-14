@@ -1,2 +1,0 @@
-# BBB_NWHACKS
-BestBlockchainBureau
