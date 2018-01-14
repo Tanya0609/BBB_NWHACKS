@@ -1,4 +1,5 @@
-pragma solidity ^0.4.11;
+//pragma solidity ^0.4.11;
+pragma experimental ABIEncoderV2;
 
 contract CompanyLicense {
 
@@ -8,27 +9,28 @@ contract CompanyLicense {
             uint256 timeExpiration;
       }
       // This is a mapping that works like a dictionary or associated array in other languages.
-      //mapping (address => License[]) licenses;
-        mapping (address => uint256[]) licenses;
+      mapping (address => License[]) licenses;
+
       // This registers an event
       event Transfer(
             address indexed _from,
             address indexed _to,
-            uint256 timeIssued,
-            uint256 timeExpiration,
             uint amount
       );
 
       // The contract constructor, which is called when the contract is deployed to the blockchain.
       // The contract is persistent on the blockchain, so it remains until it is removed.
-      function CompanyLicense() { // uint256[] aLicenseKeys
-            //licenses[tx.origin] = new License[](aLicenseKeys.length);
-            //if (aLicenseKeys.length > 0 && licenses[tx.origin].length > 0) {
-            //      for (uint i= 0; i < aLicenseKeys.length; i++) {
-            //            licenses[tx.origin][i].licenseKey = aLicenseKeys[i];
-            //      }
-            licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16] = [24243,35463734];
 
+      function CompanyLicense(uint256[] aLicenseKeys){
+            if (aLicenseKeys.length > 0) {
+                    for (uint i= 0; i < aLicenseKeys.length; i++) {
+                        licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].push(License({
+                        licenseKey: aLicenseKeys[i],
+                         timeIssued : 0,
+                          timeExpiration : 0
+                          }));
+                    }
+            }
       }
 
       // This method modifies the blockchain. The sender is required to fuel the transaction in Ether.
@@ -41,49 +43,43 @@ contract CompanyLicense {
       *  amount - number of license keys
       *
       *
-      *
-      function issueLicenses(address receiver, uint amount, uint256 timeIssued, uint256 timeExpiration) returns(bool sufficient) {
-            if (amount > 0 && licenses[msg.sender].length >= amount) {
-                  License oLicenseToUser;
+      */
+      function issueLicenses(address receiver, uint amount) public returns(bool sufficient) {
+            uint oneLicense;
+            if (amount > 0 && licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length >= amount) {
+                oneLicense = licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length-1;
                   for (uint i = 0; i < amount; i++) {
-                        oLicenseToUser = licenses[msg.sender][licenses[msg.sender].length-1];
-                        delete licenses[msg.sender][licenses[msg.sender].length-1];
-                        licenses[msg.sender].length--;
-                        licenses[receiver].push(oLicenseToUser);
+                    licenses[receiver].push(License({
+                      licenseKey: licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][oneLicense].licenseKey,
+                      timeIssued : block.timestamp,
+                      timeExpiration : block.timestamp + 30*24*60*60 //unit for timestamp is seconds
+                      }));
+                      delete licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][oneLicense];
+                      licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length--;
                   }
 
-                  Transfer(msg.sender, receiver, timeIssued, timeExpiration, amount); //opens the listener for the event, triggers the event
+                  Transfer(msg.sender, receiver, amount); //opens the listener for the event, triggers the event
                   return true;
             }
       }
-       */
-
-function issueLicenses(address receiver, uint amount) returns(bool sufficient) {
-
-      if (amount > 0 && licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length >= amount) {
-            //License oLicenseToUser;
-            for (uint i = 0; i < amount; i++) {
-                  licenses[receiver].push(licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length-1]);
-                  delete licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length-1];
-                  licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length--;
-            }
-            //unit256 timeIssued = block.timestamp;
-            //unit256 timeExpiration = block.timestamp + 356;
-            Transfer(0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16, receiver, block.timestamp,block.timestamp + 356, amount); //opens the listener for the event, triggers the event
-            return true;
-      }
-}
-
 
       // This method does not modify the blockchain, so it does not require an account to fuel for the call.
-      function getLicenses(address addr) returns(uint256[]) {
-    //function getLicenses(address addr) returns(License[]) {
+      // notes: return an array of struct only valid when the function is internal
+      function getLicenses(address addr) internal returns(License[]) {
             return licenses[addr];
       }
-/*
+
       // Check the validity of the license via time expiration stamps
-      function checkLicense(address addr) returns(bytes32[]) {
-            License license =
+      function checkLicenseExpiration(address addr) returns(bool licenseValid) {
+            if(licenses[addr].length >0){
+              for(uint i = 0; i < licenses[addr].length; i++) {
+                  if(licenses[addr][i].timeExpiration >= block.timestamp && licenses[addr][i].timeIssued <= block.timestamp){
+                      return true;
+                  }else{
+                      return false;
+                  }
+            }
       }
-      */
+
+    }
 }
