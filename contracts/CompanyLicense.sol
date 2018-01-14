@@ -20,11 +20,13 @@ contract CompanyLicense {
 
       // The contract constructor, which is called when the contract is deployed to the blockchain.
       // The contract is persistent on the blockchain, so it remains until it is removed.
+      address public sender;
 
-      function CompanyLicense(uint256[] aLicenseKeys){
+      function CompanyLicense(uint256[] aLicenseKeys, address companyKey){
+            sender = companyKey;
             if (aLicenseKeys.length > 0) {
                     for (uint i= 0; i < aLicenseKeys.length; i++) {
-                        licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].push(License({
+                        licenses[companyKey].push(License({
                         licenseKey: aLicenseKeys[i],
                          timeIssued : 0,
                           timeExpiration : 0
@@ -46,16 +48,16 @@ contract CompanyLicense {
       */
       function issueLicenses(address receiver, uint amount) public returns(bool sufficient) {
             uint oneLicense;
-            if (amount > 0 && licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length >= amount) {
-                oneLicense = licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length-1;
+            if (amount > 0 && licenses[sender].length >= amount) {
+                oneLicense = licenses[sender].length-1;
                   for (uint i = 0; i < amount; i++) {
                     licenses[receiver].push(License({
-                      licenseKey: licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][oneLicense].licenseKey,
+                      licenseKey: licenses[sender][oneLicense].licenseKey,
                       timeIssued : block.timestamp,
                       timeExpiration : block.timestamp + 30*24*60*60 //unit for timestamp is seconds
                       }));
-                      delete licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16][oneLicense];
-                      licenses[0xd85f9E0E8906b8f120241bF50B0B7c4DdFaeCf16].length--;
+                      delete licenses[sender][oneLicense];
+                      licenses[sender].length--;
                   }
 
                   Transfer(msg.sender, receiver, amount); //opens the listener for the event, triggers the event
